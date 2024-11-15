@@ -4,6 +4,10 @@ DOCKER_COMPOSE ?= docker compose
 DOCKER_USER ?= "$(shell id -u):$(shell id -g)"
 ENV ?= "dev"
 
+issue:
+	@ENV=$(ENV) DOCKER_USER=$(DOCKER_USER) $(DOCKER_COMPOSE) run --rm php bin/console doctrine:migrations:version --delete --no-interaction 'App\Version20241115111358'
+	@ENV=$(ENV) DOCKER_USER=$(DOCKER_USER) $(DOCKER_COMPOSE) run --rm php bin/console doctrine:migrations:migrate --no-interaction 'App\Version20241115111358'
+
 init:
 	@make -s docker-compose-check
 	@if [ ! -e compose.override.yml ]; then \
@@ -12,6 +16,7 @@ init:
 	@ENV=$(ENV) DOCKER_USER=$(DOCKER_USER) $(DOCKER_COMPOSE) run --rm php composer install --no-interaction --no-scripts
 	@ENV=$(ENV) DOCKER_USER=$(DOCKER_USER) $(DOCKER_COMPOSE) run --rm nodejs
 	@make -s install
+	@make -s issue
 	@ENV=$(ENV) DOCKER_USER=$(DOCKER_USER) $(DOCKER_COMPOSE) up -d
 
 run:
@@ -42,6 +47,6 @@ node-watch:
 	@ENV=$(ENV) DOCKER_USER=$(DOCKER_USER) $(DOCKER_COMPOSE) run --rm -i nodejs "npm run watch"
 
 docker-compose-check:
-	@which $(DOCKER_COMPOSE) > /dev/null || (echo "Please install docker compose binary" && exit 1)
+	@$(DOCKER_COMPOSE) version > /dev/null || (echo "Please install docker compose binary" && exit 1)
 	@echo "You are using \"$(DOCKER_COMPOSE)\" binary"
 	@echo "Current version is \"$$($(DOCKER_COMPOSE) version)\""
